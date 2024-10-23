@@ -97,9 +97,15 @@ __global__ void CompactKernel(const scalar_t* a, scalar_t* out, size_t size, Cud
    */
   size_t gid = blockIdx.x * blockDim.x + threadIdx.x;
 
-  /// BEGIN SOLUTION
-  assert(false && "Not Implemented");
-  /// END SOLUTION
+  if (gid < size) {
+    size_t idx = gid;
+    size_t offset = 0;
+    for (int i = shape.size - 1; i >= 0; i--) {
+      offset += (idx % shape.data[i]) * strides.data[i];
+      idx /= shape.data[i];
+    }
+    out[gid] = a[offset];
+  }
 }
 
 void Compact(const CudaArray& a, CudaArray* out, std::vector<int32_t> shape,
