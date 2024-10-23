@@ -275,35 +275,21 @@ void MatmulTiled(const AlignedArray& a, const AlignedArray& b, AlignedArray* out
   /// END SOLUTION
 }
 
-void ReduceMax(const AlignedArray& a, AlignedArray* out, size_t reduce_size) {
-  /**
-   * Reduce by taking maximum over `reduce_size` contiguous blocks.
-   *
-   * Args:
-   *   a: compact array of size a.size = out.size * reduce_size to reduce over
-   *   out: compact array to write into
-   *   reduce_size: size of the dimension to reduce over
-   */
-
-  /// BEGIN SOLUTION
-  assert(false && "Not Implemented");
-  /// END SOLUTION
+#define DefineReduceOp(name, op) \
+void Reduce ## name(const AlignedArray& a, AlignedArray* out, size_t reduce_size) { \
+  size_t block_count = a.size / reduce_size; \
+  for (size_t i = 0; i < block_count; i++) { \
+    out->ptr[i] = a.ptr[i * reduce_size]; \
+    for (size_t j = 1; j < reduce_size; j++) { \
+      out->ptr[i] = op(out->ptr[i], a.ptr[i * reduce_size + j]); \
+    } \
+  } \
 }
 
-void ReduceSum(const AlignedArray& a, AlignedArray* out, size_t reduce_size) {
-  /**
-   * Reduce by taking sum over `reduce_size` contiguous blocks.
-   *
-   * Args:
-   *   a: compact array of size a.size = out.size * reduce_size to reduce over
-   *   out: compact array to write into
-   *   reduce_size: size of the dimension to reduce over
-   */
+DefineReduceOp(Max, std::max);
+DefineReduceOp(Sum, std::plus<scalar_t>());
 
-  /// BEGIN SOLUTION
-  assert(false && "Not Implemented");
-  /// END SOLUTION
-}
+#undef DefineReduceOp
 
 }  // namespace cpu
 }  // namespace needle
@@ -363,6 +349,6 @@ PYBIND11_MODULE(ndarray_backend_cpu, m) {
   // m.def("matmul", Matmul);
   // m.def("matmul_tiled", MatmulTiled);
 
-  // m.def("reduce_max", ReduceMax);
-  // m.def("reduce_sum", ReduceSum);
+  m.def("reduce_max", ReduceMax);
+  m.def("reduce_sum", ReduceSum);
 }
