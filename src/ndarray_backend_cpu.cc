@@ -5,6 +5,7 @@
 #include <cmath>
 #include <iostream>
 #include <stdexcept>
+#include <functional>
 
 namespace needle {
 namespace cpu {
@@ -131,24 +132,51 @@ void ScalarSetitem(const size_t size, scalar_t val, AlignedArray* out, std::vect
   }
 }
 
-void EwiseAdd(const AlignedArray& a, const AlignedArray& b, AlignedArray* out) {
-  /**
-   * Set entries in out to be the sum of correspondings entires in a and b.
-   */
-  for (size_t i = 0; i < a.size; i++) {
-    out->ptr[i] = a.ptr[i] + b.ptr[i];
+#define DefineEWiseOp(name, op) \
+  void Ewise ## name(const AlignedArray& a, const AlignedArray& b, AlignedArray* out) { \
+    for (size_t i = 0; i < a.size; i++) { \
+      out->ptr[i] = op(a[i], b[i]); \
+    } \
   }
-}
 
-void ScalarAdd(const AlignedArray& a, scalar_t val, AlignedArray* out) {
-  /**
-   * Set entries in out to be the sum of corresponding entry in a plus the scalar val.
-   */
-  for (size_t i = 0; i < a.size; i++) {
-    out->ptr[i] = a.ptr[i] + val;
+DefineEWiseOp(Add, std::plus<scalar_t>());
+DefineEWiseOp(Mul, std::multiplies<scalar_t>());
+DefineEWiseOp(Div, std::divides<scalar_t>());
+DefineEWiseOp(Maximum, std::max);
+DefineEWiseOp(Eq, std::equal_to<scalar_t>());
+DefineEWiseOp(Ge, std::greater_equal<scalar_t>());
+
+#undef DefineEWiseOp
+
+#define DefineScalarOp(name, op) \
+  void Scalar ## name(const AlignedArray& a, scalar_t val, AlignedArray* out) { \
+    for (size_t i = 0; i < a.size; i++) { \
+      out->ptr[i] = op(a[i], val); \
+    } \
   }
-}
 
+DefineScalarOp(Add, std::plus<scalar_t>());
+DefineScalarOp(Mul, std::multiplies<scalar_t>());
+DefineScalarOp(Div, std::divides<scalar_t>());
+DefineScalarOp(Power, std::pow);
+DefineScalarOp(Maximum, std::max);
+DefineScalarOp(Eq, std::equal_to<scalar_t>());
+DefineScalarOp(Ge, std::greater_equal<scalar_t>());
+
+#undef DefineScalarOp
+
+#define DefineEWiseOp(name, op) \
+  void Ewise ## name(const AlignedArray& a, AlignedArray* out) { \
+    for (size_t i = 0; i < a.size; i++) { \
+      out->ptr[i] = op(a[i]); \
+    } \
+  }
+
+DefineEWiseOp(Log, std::log);
+DefineEWiseOp(Exp, std::exp);
+DefineEWiseOp(Tanh, std::tanh);
+
+#undef DefineEWiseOp
 
 /**
  * In the code the follows, use the above template to create analogous element-wise
@@ -315,22 +343,22 @@ PYBIND11_MODULE(ndarray_backend_cpu, m) {
   m.def("ewise_add", EwiseAdd);
   m.def("scalar_add", ScalarAdd);
 
-  // m.def("ewise_mul", EwiseMul);
-  // m.def("scalar_mul", ScalarMul);
-  // m.def("ewise_div", EwiseDiv);
-  // m.def("scalar_div", ScalarDiv);
-  // m.def("scalar_power", ScalarPower);
+  m.def("ewise_mul", EwiseMul);
+  m.def("scalar_mul", ScalarMul);
+  m.def("ewise_div", EwiseDiv);
+  m.def("scalar_div", ScalarDiv);
+  m.def("scalar_power", ScalarPower);
 
-  // m.def("ewise_maximum", EwiseMaximum);
-  // m.def("scalar_maximum", ScalarMaximum);
-  // m.def("ewise_eq", EwiseEq);
-  // m.def("scalar_eq", ScalarEq);
-  // m.def("ewise_ge", EwiseGe);
-  // m.def("scalar_ge", ScalarGe);
+  m.def("ewise_maximum", EwiseMaximum);
+  m.def("scalar_maximum", ScalarMaximum);
+  m.def("ewise_eq", EwiseEq);
+  m.def("scalar_eq", ScalarEq);
+  m.def("ewise_ge", EwiseGe);
+  m.def("scalar_ge", ScalarGe);
 
-  // m.def("ewise_log", EwiseLog);
-  // m.def("ewise_exp", EwiseExp);
-  // m.def("ewise_tanh", EwiseTanh);
+  m.def("ewise_log", EwiseLog);
+  m.def("ewise_exp", EwiseExp);
+  m.def("ewise_tanh", EwiseTanh);
 
   // m.def("matmul", Matmul);
   // m.def("matmul_tiled", MatmulTiled);
