@@ -5,6 +5,7 @@ import numpy as np
 from . import ndarray_backend_numpy
 from . import ndarray_backend_cpu
 
+import builtins
 
 def prod(x):
     return math.prod(x)
@@ -296,7 +297,7 @@ class NDArray:
         assert all(n == s or s == 1 for n, s in zip(new_shape, self.shape))
         new_strides = tuple([
             0 if s == 1 else st
-            for s, st in zip(new_shape, self.strides)
+            for s, st in zip(self.shape, self.strides)
         ])
         return self.as_strided(new_shape, new_strides)
 
@@ -368,7 +369,7 @@ class NDArray:
             [(s.stop - s.start + s.step - 1) // s.step for s in idxs]
         )
         new_strides = tuple([st * s.step for st, s in zip(self.strides, idxs)])
-        new_offset = self._offset + sum(
+        new_offset = self._offset + builtins.sum(
             [s.start * st for s, st in zip(idxs, self.strides)]
         )
         new = self.as_strided(new_shape, new_strides)
